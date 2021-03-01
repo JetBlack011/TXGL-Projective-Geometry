@@ -1,3 +1,7 @@
+/**
+ * Defines light (and shadow) via lines stretching from point source to XZ plane, intersecting vertices of shape
+ * @param {setup} s The current canvas instance
+ */
 const lightXZSketch = (s) => {
     s.draggables = [],
     s.currentDraggable = null;
@@ -24,6 +28,9 @@ const lightXZSketch = (s) => {
         s.draggables = [light];
     }
 
+    /**
+     * Define canvas axes, background color, draggable components
+     */
     s.draw = () => {
         s.background(0);
         s.translate(-s.width / 2, -s.height / 2);

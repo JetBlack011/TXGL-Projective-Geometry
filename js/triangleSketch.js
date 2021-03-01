@@ -1,3 +1,7 @@
+/**
+ * Defines basis triangle for shadow of bug on triangle scenario
+ * @param {setup} s The current canvas instance
+ */
 const triangleSketch = (s) => {
     s.draggables = [],
     s.currentDraggable = null;
@@ -18,6 +22,7 @@ const triangleSketch = (s) => {
         s.draggables = [p1, p2, p3];
     }
 
+    
     s.draw = () => {
         s.background(0);
         s.translate(-s.width / 2, -s.height / 2);

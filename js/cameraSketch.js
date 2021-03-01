@@ -1,6 +1,8 @@
 /// <reference path="../p5.d.ts"/>
 /// <reference path="../math.d.ts"/>
-
+/**
+ * Allows for WASD mvmt of (draggable) camera
+ */
 let cameraSpeed = 10,
     cameraX = 0, cameraY = 0, cameraZ;
 
