@@ -1,7 +1,7 @@
 /// <reference path="../p5.d.ts"/>
 /// <reference path="../math.d.ts"/>
 /**
- * Allows for WASD mvmt of (draggable) camera
+ * Allows for WASD mvmt of camera
  */
 let cameraSpeed = 10,
     cameraX = 0, cameraY = 0, cameraZ;
@@ -134,6 +134,7 @@ function draw() {
     //     rotateY(math.PI / 2)
     // }
 
+    // COMMENT IN FOR ROTATING TRIANGLE
     rotateY(millis() * .001);
 
     fill(255);
@@ -152,6 +153,35 @@ function draw() {
     // rotateY(frameCount * 0.01);
     // triangle(0, 0, 250, 0, 0, 250);
     // pop();
+
+
+    // BUG, BUGGED TRIANGLE BELOW
+    
+    // SIMULATE SHADOW WITH LINES FROM SOURCE THROUGH TRIANGLE VERTICES
+    // line(80, 80, 80, p1.x, p1.y, p1.z);
+    // line(80, 80, 80, p2.x, p2.y, p2.z);
+    // line(80, 80, 80, p3.x, p3.y, p3.z);
+    // stroke(255);
+
+    // TESTING MANUAL MANIPULATION OF TRIANGLE--ANY WAY TO MAKE DRAGGABLES IN 3D?
+    // if (keyIsDown('G'.charCodeAt(0)))
+    //     // rotateY(30);
+    //     rotateY(millis() * .001);
+    // if (keyIsDown('H'.charCodeAt(0)))
+    //     rotateY(-30);
+
+    // circle((p1.x + p2.x + p3.x) / 3, (p2.x + p2.x + p3.x) / 3, (p3.x + p2.x + p3.x) / 3);
+}
+
+function moveTriangle() {
+    if (keyIsDown('RIGHT_ARROW'.charCodeAt(0)))
+        cameraX += cameraSpeed;
+    if (keyIsDown('LEFT_ARROW'.charCodeAt(0)))
+        cameraX -= cameraSpeed;
+    if (keyIsDown('UP_ARROW'.charCodeAt(0)))
+        cameraY -= cameraSpeed; // Awkward flipped axes
+    if (keyIsDown('DOWN_ARROW'.charCodeAt(0)))
+        cameraY += cameraSpeed;
 }
 
 function moveCamera() {
