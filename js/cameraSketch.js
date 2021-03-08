@@ -173,17 +173,6 @@ function draw() {
     // circle((p1.x + p2.x + p3.x) / 3, (p2.x + p2.x + p3.x) / 3, (p3.x + p2.x + p3.x) / 3);
 }
 
-function moveTriangle() {
-    if (keyIsDown('RIGHT_ARROW'.charCodeAt(0)))
-        cameraX += cameraSpeed;
-    if (keyIsDown('LEFT_ARROW'.charCodeAt(0)))
-        cameraX -= cameraSpeed;
-    if (keyIsDown('UP_ARROW'.charCodeAt(0)))
-        cameraY -= cameraSpeed; // Awkward flipped axes
-    if (keyIsDown('DOWN_ARROW'.charCodeAt(0)))
-        cameraY += cameraSpeed;
-}
-
 function moveCamera() {
     if (keyIsDown('D'.charCodeAt(0)))
         cameraX += cameraSpeed;
