@@ -49,13 +49,14 @@ const cameraSketch = (s) => {
     s.currentDraggable = null;
     
     s.setup = () => {
-        s.createCanvas(750, 500, WEBGL);
+        s.createCanvas(500, 300, WEBGL);
         s.angleMode(RADIANS);
     
         cameraZ = (height / 2) / math.tan(PI / 6) + 400;
     }
     
     s.draw = () => {
+        // TODO: Implement bug view
         s1.x = -(-light.z * t1.x + light.x * t1.z) / (light.z - t1.z);
         s1.y = -(-light.z * t1.y + light.y * t1.z) / (light.z - t1.z);
         s1.z = 0;
@@ -114,33 +115,6 @@ const cameraSketch = (s) => {
         s.line(light.x, light.y + offset, light.z, s1.x, s1.y + offset, s1.z);
         s.line(light.x, light.y + offset, light.z, s2.x, s2.y + offset, s2.z);
         s.line(light.x, light.y + offset, light.z, s3.x, s3.y + offset, s3.z);
-    
-        // translate(mouseX, mouseY, 0);
-        // normalMaterial();
-        // push();
-        // rotateZ(frameCount * 0.01);
-        // rotateX(frameCount * 0.01);
-        // rotateY(frameCount * 0.01);
-        // triangle(0, 0, 250, 0, 0, 250);
-        // pop();
-    
-    
-        // BUG, BUGGED TRIANGLE BELOW
-        
-        // SIMULATE SHADOW WITH LINES FROM SOURCE THROUGH TRIANGLE VERTICES
-        // line(80, 80, 80, s1.x, s1.y, s1.z);
-        // line(80, 80, 80, s2.x, s2.y, s2.z);
-        // line(80, 80, 80, s3.x, s3.y, s3.z);
-        // stroke(255);
-    
-        // TESTING MANUAL MANIPULATION OF TRIANGLE--ANY WAY TO MAKE s.draggables IN 3D?
-        // if (keyIsDown('G'.charCodeAt(0)))
-        //     // rotateY(30);
-        //     rotateY(millis() * .001);
-        // if (keyIsDown('H'.charCodeAt(0)))
-        //     rotateY(-30);
-    
-        // circle((s1.x + s2.x + s3.x) / 3, (s2.x + s2.x + s3.x) / 3, (s3.x + s2.x + s3.x) / 3);
     }
     
     s.moveCamera = () => {
@@ -159,26 +133,8 @@ const cameraSketch = (s) => {
     }
 
     s.keyPressed = () => {
+        // TODO: Fix janky camera lock
         if (keyCode == ENTER)
             cameraLock ^= true;
     }
-    
-    // s.mousePressed = () => {
-    //     for (let i = 0; i < s.draggables.length; ++i) {
-    //         if (s.canDrag(s.draggables[i]) && !s.currentDraggable) {
-    //             s.currentDraggable = s.draggables[i];
-    //         }
-    //     }
-    // }
-    
-    // s.mouseDragged = () => {
-    //     if (s.currentDraggable) {
-    //         s.currentDraggable.x = mouseX;
-    //         s.currentDraggable.y = mouseY;
-    //     }
-    // }
-    
-    // s.mouseReleased = () => {
-    //     s.currentDraggable = null;
-    // }
 }
