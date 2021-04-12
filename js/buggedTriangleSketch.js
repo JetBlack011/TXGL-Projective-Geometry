@@ -2,7 +2,7 @@
  * Defines basis triangle for shadow of bug on triangle scenario
  * @param {setup} s The current canvas instance
  */
- const buggedTriangleSketch = (s) => {
+ const triangleSketch = (s) => {
     s.draggables = [],
     s.currentDraggable = null;
 
@@ -12,14 +12,17 @@
 
         s.mouseZ = 0
 
-        p1.x = 200;
-        p1.y = 200;
-        p2.x = 200;
-        p2.y = 100;
-        p3.x = 300;
-        p3.y = 200;
+        t1.x = 200;
+        t1.y = 200;
+        t1.z = tz;
+        t2.x = 200;
+        t2.y = 100;
+        t2.z = tz;
+        t3.x = 300;
+        t3.y = 200;
+        t3.z = tz;
     
-        s.draggables = [p1, p2, p3];
+        s.draggables = [t1, t2, t3];
     }
 
     
@@ -40,7 +43,7 @@
     
         s.stroke(255);
         s.fill(255, 255, 255, 100);
-        s.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+        s.triangle(t1.x, t1.y, t2.x, t2.y, t3.x, t3.y);
     }
 
     s.mousePressed = () => {

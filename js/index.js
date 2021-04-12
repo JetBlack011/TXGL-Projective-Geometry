@@ -2,25 +2,27 @@
 /// <reference path="../math.d.ts"/>
 
 // Triangle points
-let t1, t2, t3;
+let t1, t2, t3, b;
 let tz = 100;
 
 // Point light
 let light;
 
 // Projected shadow points
-let s1, s2, s3;
+let s1, s2, s3, bs;
 
 function setup() {
     t1 = new Draggable();
     t2 = new Draggable();
     t3 = new Draggable();
+    b = new Draggable();
     
     light = new Draggable();
     
     s1 = new Draggable();
     s2 = new Draggable();
     s3 = new Draggable();
+    bs = new Draggable();
 }
 
 let p5Triangle = new p5(triangleSketch, 'triangleSketch'),
