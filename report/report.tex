@@ -61,24 +61,39 @@
         \end{subfigure}
         \caption{The minimized-radius circles encompassing the shape of France and Japan, respectively}
     \end{figure}
-    
+\section*{Linear Projective Transformations}
+The transformation matrix of a linear projective transformation is defined as
+\[
+\left( 
+\begin{array}{ccc}
+a & b & c \\
+e & f & g \\
+h & i & j \\
+\end{array}
+\right)
+\]
+which results in the transformation
+\[
+(X,Y) = \left( \frac{c + a x + b y}{j + h x + i y}, \frac{g + e x + f y}{j + h x + i y} \right) 
+\]
+where $(x,y)$ are the points on the projection before the transformation and $(X,Y)$ are points of the projection after the transformation.
     \begin{figure}[!ht]
         \centering
         \begin{subfigure}{.3\textwidth}
             \centering
             \includegraphics[scale=.1]{ma1.png}
-            \caption{Original projection}
+            \caption{Original Projection}
         \end{subfigure}
         \begin{subfigure}{.3\textwidth}
             \centering
             \includegraphics[scale=.1]{ma2.png}
-            \caption{Transformed projection}
+            \caption{Transformed Projection}
         \end{subfigure}
         \begin{subfigure}{.3\textwidth}
             \centering
             \includegraphics[scale=.1]{ma3.png}
-            \caption{Different transformation}
+            \caption{Different Transformation}
         \end{subfigure}
-        \caption{In a specific case, such as when $h$ and $j$ are set to zero, changes in $b$ will shift the projection along the $x$-axis}
+        \caption{(a) The original set of projected points. (b) An arbitrary linear projective transformation of those projected points. (c) When $h$ and $j$ of the transformation matrix are set to zero, changes in $b$ will shift the projection along the $x$-axis}
     \end{figure}
 \end{document}
