@@ -4,6 +4,7 @@
 const projectiveOptimizationSketch = (s) => {
     s.normal = 400;
     s.rate = 0.003;
+    s.epsilon = 2;
     s.transform = math.identity(3);
     
     s.draggables = [];
@@ -13,21 +14,19 @@ const projectiveOptimizationSketch = (s) => {
         s.createCanvas(1000, 600);
         s.angleMode(RADIANS);
     
-        s.poly = [
-            [0, 0],
-            [1, 0],
-            [1, 5],
-            [0, 1]
-        ];
+        // s.poly = [
+        //     [0, 0],
+        //     [1, 0],
+        //     [1, 5],
+        //     [0, 1]
+        // ];
 
-        s.dot = [0.5, 0.5];
+        s.poly = generateRandomConvexPoly(7);
+
+        s.dot = new Draggable(0, 0);
+        s.draggables.push(s.dot);
 
         s.polyDot = [s.dot];
-
-        // [0.25, 0.05]
-        // s.poly = [[0, 0], [0.5, 0], [0.25, 0.25]];
-
-        // s.poly = generateRandomConvexPoly(10);
         
         for (let i = 0; i < s.poly.length; i++) {
             s.poly[i] = new Draggable(s.poly[i][0], s.poly[i][1]);
@@ -45,15 +44,18 @@ const projectiveOptimizationSketch = (s) => {
         s.noFill();
         s.background(0);
     
-        if (!s.currentDraggable) {
-            s.optimize(s.rate);
-            s.normalize();
-        }
-    
         // Draw circumcircle and incircle
         let circumcircle = makeCircle(s.poly);
         let incircle = makeIncircle([s.poly]);
         let roundness = incircle.r / circumcircle.r;
+
+        s.center = getCenterOfMass([new Point(circumcircle.x, circumcircle.y), new Point(incircle.x, incircle.y)]);
+        // s.center = circumcircle;
+    
+        if (!s.currentDraggable) {
+            s.optimize(s.rate);
+            s.normalize();
+        }
     
         s.strokeWeight(0.5);
         s.circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
@@ -86,25 +88,27 @@ const projectiveOptimizationSketch = (s) => {
 
     s.projectiveOptimize = (rate) => {
         let p1 = createVector(s.dot.x, s.dot.y);
-        let p2 = createVector(0, 0);
-        let distance = p1.mag();
+        let p2 = createVector(s.center.x, s.center.y);
+        let distance = dist(s.dot.x, s.dot.y, s.center.x, s.center.y)
         let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
-        let rot = rotationMatrix(theta);
-        let twist = twistMatrix((1 - rate) * s.normal / distance, 0);
-        let rotInv = rotationMatrix(-theta);
-
-        applyTransformation(rot, s.polyDot);
-        applyTransformation(twist, s.polyDot);
-        applyTransformation(rotInv, s.polyDot);
-
-        s.transform = math.multiply(s.transform, rot);
-        s.transform = math.multiply(s.transform, twist);
-        s.transform = math.multiply(s.transform, rotInv);
+        if (distance > s.epsilon) {
+            let rot = rotationMatrix(theta);
+            let twist = twistMatrix(-rate * s.poly.length / 10000 * distance, 0);
+            let rotInv = rotationMatrix(-theta);
+    
+            applyTransformation(rot, s.polyDot);
+            applyTransformation(twist, s.polyDot);
+            applyTransformation(rotInv, s.polyDot);
+    
+            s.transform = math.multiply(s.transform, rot);
+            s.transform = math.multiply(s.transform, twist);
+            s.transform = math.multiply(s.transform, rotInv);
+        }
     }
     
     s.optimize = (rate) => {
-        // s.affineOptimize(rate);
+        s.affineOptimize(rate);
         s.projectiveOptimize(rate);
     }
     
@@ -115,7 +119,11 @@ const projectiveOptimizationSketch = (s) => {
         applyTransformation(scale, s.polyDot);
         
         let centerOfMass = getCenterOfMass(s.poly);
-        let translation = translationMatrix(-centerOfMass.x, -centerOfMass.y);
+        let translation;
+        if (s.center)
+            translation = translationMatrix(-s.center.x, -s.center.y);
+        else
+            translation = translationMatrix(-centerOfMass.x, -centerOfMass.y);
         applyTransformation(translation, s.polyDot);
         
         s.transform = math.multiply(s.transform, scale);
@@ -138,16 +146,12 @@ const projectiveOptimizationSketch = (s) => {
     }
     
     s.drawPoly = () => {
-        // s.stroke(255, 0, 0);
-        // s.strokeWeight(5);
-        // point(...dot);
-
         // Draw center of mass
         s.stroke(255, 0, 0);
         s.strokeWeight(5);
         
-        let centerOfMass = getCenterOfMass(s.poly);
-        s.point(centerOfMass.x, centerOfMass.y)
+        // let centerOfMass = getCenterOfMass(s.poly);
+        s.point(s.center.x, s.center.y)
     
         s.stroke(255);
         s.fill(255);
@@ -170,6 +174,8 @@ const projectiveOptimizationSketch = (s) => {
             // point(poly[i].x, poly[i].y);
             // line(poly[i].x, poly[i].y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y);
         }
+
+        s.dot.draw(s);
     }
 
     s.mousePressed = () => {

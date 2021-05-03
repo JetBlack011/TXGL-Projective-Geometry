@@ -34,5 +34,5 @@ function setup() {
 //     p5LightYZ = new p5(lightZYSketch, 'lightZYSketch'),
 //     p5Projection = new p5(cameraSketch, 'cameraSketch');
 
-let p5Affine = new p5(affineOptimizationSketch, 'affineOptimizationSketch');
-// let p5Projective = new p5(projectiveOptimizationSketch, 'projectiveOptimizationSketch');
+// let p5Affine = new p5(affineOptimizationSketch, 'affineOptimizationSketch');
+let p5Projective = new p5(projectiveOptimizationSketch, 'projectiveOptimizationSketch');
