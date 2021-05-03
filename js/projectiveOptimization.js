@@ -23,7 +23,7 @@ const projectiveOptimizationSketch = (s) => {
 
         s.poly = generateRandomConvexPoly(7);
 
-        s.dot = new Draggable(0, 0);
+        s.dot = new Draggable(.1, .1);
         s.draggables.push(s.dot);
 
         s.polyDot = [s.dot];
@@ -49,8 +49,9 @@ const projectiveOptimizationSketch = (s) => {
         let incircle = makeIncircle([s.poly]);
         let roundness = incircle.r / circumcircle.r;
 
-        s.center = getCenterOfMass([new Point(circumcircle.x, circumcircle.y), new Point(incircle.x, incircle.y)]);
-        // s.center = circumcircle;
+        // s.center = getCenterOfMass(s.poly);
+        // s.center = getCenterOfMass([new Point(circumcircle.x, circumcircle.y), new Point(incircle.x, incircle.y)]);
+        s.center = circumcircle;
     
         if (!s.currentDraggable) {
             s.optimize(s.rate);
