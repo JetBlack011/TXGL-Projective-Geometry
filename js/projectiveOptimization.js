@@ -3,7 +3,7 @@
 
 const projectiveOptimizationSketch = (s) => {
     s.normal = 400;
-    s.rate = 0.003;
+    s.rate = 0.002;
     s.epsilon = 2;
     s.transform = math.identity(3);
     
@@ -21,7 +21,8 @@ const projectiveOptimizationSketch = (s) => {
         //     [0, 1]
         // ];
 
-        s.poly = generateRandomConvexPoly(7);
+        s.poly = generateRandomConvexPoly(4);
+        s.initialPoly = deepCopy(s.poly);
 
         s.dot = new Draggable(.1, .1);
         s.draggables.push(s.dot);
@@ -61,7 +62,19 @@ const projectiveOptimizationSketch = (s) => {
         s.strokeWeight(0.5);
         s.circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
         s.circle(incircle.x, incircle.y, incircle.r * 2);
-    
+
+        let initialPolyString = 'Initial Polygon = ';
+        for (let i = 0; i < s.initialPoly.length; i++) {
+            initialPolyString += `(${s.initialPoly[i][0].toFixed(3)},${s.initialPoly[i][1].toFixed(3)}) `
+        }
+
+        let polyString = 'Polygon = ';
+        for (let i = 0; i < s.poly.length; i++) {
+            polyString += `(${s.poly[i].x.toFixed(3)},${s.poly[i].y.toFixed(3)}) `
+        }
+
+        document.getElementById('initial-polygon').innerText = initialPolyString;
+        document.getElementById('polygon').innerText = polyString;
         document.getElementById('roundness').innerText = `Roundness = ${roundness.toFixed(4)}`;
     
         s.drawPoly();
@@ -93,19 +106,17 @@ const projectiveOptimizationSketch = (s) => {
         let distance = dist(s.dot.x, s.dot.y, s.center.x, s.center.y)
         let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
-        if (distance > s.epsilon) {
-            let rot = rotationMatrix(theta);
-            let twist = twistMatrix(-rate * s.poly.length / 10000 * distance, 0);
-            let rotInv = rotationMatrix(-theta);
-    
-            applyTransformation(rot, s.polyDot);
-            applyTransformation(twist, s.polyDot);
-            applyTransformation(rotInv, s.polyDot);
-    
-            s.transform = math.multiply(s.transform, rot);
-            s.transform = math.multiply(s.transform, twist);
-            s.transform = math.multiply(s.transform, rotInv);
-        }
+        let rot = rotationMatrix(theta);
+        let twist = twistMatrix(-rate / 5000 * distance, 0);
+        let rotInv = rotationMatrix(-theta);
+
+        applyTransformation(rot, s.polyDot);
+        applyTransformation(twist, s.polyDot);
+        applyTransformation(rotInv, s.polyDot);
+
+        s.transform = math.multiply(s.transform, rot);
+        s.transform = math.multiply(s.transform, twist);
+        s.transform = math.multiply(s.transform, rotInv);
     }
     
     s.optimize = (rate) => {
@@ -195,6 +206,15 @@ const projectiveOptimizationSketch = (s) => {
     }
 
     s.mouseReleased = () => {
+        if (s.currentDraggable) {
+            s.transform = math.identity(3);
+            s.initialPoly = [];
+
+            for (let i = 0; i < s.poly.length; i++) {
+                s.initialPoly.push([s.poly[i].x, s.poly[i].y]);
+            }
+        }
+
         s.currentDraggable = null;
     }
 
@@ -315,7 +335,10 @@ function equal(m1, m2) {
 
 function deepCopy(arr) {
     let copy = new Array(arr.length);
+
     for (let i = 0; i < arr.length; i++) {
         copy[i] = arr[i].slice(0);
     }
+
+    return copy;
 }
