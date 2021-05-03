@@ -21,7 +21,7 @@ const projectiveOptimizationSketch = (s) => {
         //     [0, 1]
         // ];
 
-        s.poly = generateRandomConvexPoly(4);
+        s.poly = generateRandomConvexPoly(5);
         s.initialPoly = deepCopy(s.poly);
 
         s.dot = new Draggable(.1, .1);

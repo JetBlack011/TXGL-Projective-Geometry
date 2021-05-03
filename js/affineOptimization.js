@@ -3,7 +3,7 @@
 
 const affineOptimizationSketch = (s) => {
     s.normal = 400;
-    s.rate = 0.003;
+    s.rate = 0.01;
     s.transform = math.identity(3);
     
     s.draggables = [];
@@ -13,14 +13,14 @@ const affineOptimizationSketch = (s) => {
         s.createCanvas(1000, 600);
         s.angleMode(RADIANS);
     
-        s.poly = [
-            [0, 0],
-            [1, 0],
-            [1, 5],
-            [0, 1]
-        ];
+        // s.poly = [
+        //     [0, 0],
+        //     [1, 0],
+        //     [1, 5],
+        //     [0, 1]
+        // ];
 
-        // s.poly = generateRandomConvexPoly(10);
+        s.poly = generateRandomConvexPoly(50);
         
         for (let i = 0; i < s.poly.length; i++) {
             s.poly[i] = new Draggable(s.poly[i][0], s.poly[i][1]);
@@ -37,20 +37,22 @@ const affineOptimizationSketch = (s) => {
         s.noFill();
         s.background(0);
     
+        // Draw circumcircle and incircle
+        s.circumcircle = makeCircle(s.poly);
+        s.incircle = makeIncircle([s.poly]);
+        let roundness = s.incircle.r / s.circumcircle.r;
+
+        // s.center = getCenterOfMass([circumcircle, incircle]);
+    
         // if (!s.currentDraggable) {
         if (!mouseIsPressed) {
             s.optimize(s.rate);
             s.normalize();
         }
     
-        // Draw circumcircle and incircle
-        let circumcircle = makeCircle(s.poly);
-        let incircle = makeIncircle([s.poly]);
-        let roundness = incircle.r / circumcircle.r;
-    
         s.strokeWeight(0.5);
-        s.circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
-        s.circle(incircle.x, incircle.y, incircle.r * 2);
+        s.circle(s.circumcircle.x, s.circumcircle.y, s.circumcircle.r * 2);
+        s.circle(s.incircle.x, s.incircle.y, s.incircle.r * 2);
     
         document.getElementById('roundness').innerText = `Roundness = ${roundness.toFixed(4)}`;
     
@@ -58,32 +60,76 @@ const affineOptimizationSketch = (s) => {
         s.outputTransform();
     }
     
-    s.optimize = (rate) => {
+    // s.optimize = (rate) => {
+    //     let furthestPoints = findFurthestPoints(s.poly);
+    //     let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
+    //     let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
+
+    //     // s.stroke(255);
+    //     // s.strokeWeight(5);
+    //     // s.line(p1.x, p1.y, p2.x, p2.y);
+    
+    //     let theta = p1.sub(p2).angleBetween(createVector(1, 0));
+    
+    //     let rot = rotationMatrix(theta);
+    //     let scale = scaleMatrix((1 - rate) * (s.normal / furthestPoints.s), s.normal / furthestPoints.s);
+    
+    //     // det = math.det(scale);
+    
+    //     applyTransformation(rot, s.poly);
+    //     applyTransformation(scale, s.poly);
+
+    //     s.transform = math.multiply(s.transform, rot);
+    //     s.transform = math.multiply(s.transform, scale);
+    
+    //     rot = rotationMatrix(-theta);
+    
+    //     applyTransformation(rot, s.poly);
+    //     s.transform = math.multiply(s.transform, rot);
+    // }
+
+    s.affineOptimize = (rate) => {
         let furthestPoints = findFurthestPoints(s.poly);
         let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
         let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
-
-        // s.stroke(255);
-        // s.strokeWeight(5);
-        // s.line(p1.x, p1.y, p2.x, p2.y);
-    
         let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
         let rot = rotationMatrix(theta);
         let scale = scaleMatrix((1 - rate) * (s.normal / furthestPoints.s), s.normal / furthestPoints.s);
-    
-        // det = math.det(scale);
+        let rotInv = rotationMatrix(-theta);
     
         applyTransformation(rot, s.poly);
         applyTransformation(scale, s.poly);
-
+        applyTransformation(rotInv, s.poly);
+        
         s.transform = math.multiply(s.transform, rot);
         s.transform = math.multiply(s.transform, scale);
+        s.transform = math.multiply(s.transform, rotInv);
+    }
+
+    s.projectiveOptimize = (rate) => {
+        // let centerOfMass = getCenterOfMass(s.poly);
+        let p1 = createVector(s.circumcircle.x, s.circumcircle.y);
+        let p2 = createVector(s.incircle.x, s.incircle.y);
+        let distance = dist(s.circumcircle.x, s.circumcircle.y, s.incircle.x, s.incircle.y)
+        let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
-        rot = rotationMatrix(-theta);
-    
+        let rot = rotationMatrix(theta);
+        let twist = twistMatrix(rate / 50000 * distance, 0);
+        let rotInv = rotationMatrix(-theta);
+
         applyTransformation(rot, s.poly);
+        applyTransformation(twist, s.poly);
+        applyTransformation(rotInv, s.poly);
+
         s.transform = math.multiply(s.transform, rot);
+        s.transform = math.multiply(s.transform, twist);
+        s.transform = math.multiply(s.transform, rotInv);
+    }
+    
+    s.optimize = (rate) => {
+        s.affineOptimize(rate);
+        // s.projectiveOptimize(rate);
     }
     
     // Centers and scales poly to fit in the field of view
