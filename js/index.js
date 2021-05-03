@@ -12,7 +12,7 @@ let light;
 let s1, s2, s3, bs;
 
 function setup() {
-    
+
 }
 
 // function setup() {
@@ -35,3 +35,4 @@ function setup() {
 //     p5Projection = new p5(cameraSketch, 'cameraSketch');
 
 let p5Affine = new p5(affineOptimizationSketch, 'affineOptimizationSketch');
+// let p5Projective = new p5(projectiveOptimizationSketch, 'projectiveOptimizationSketch');

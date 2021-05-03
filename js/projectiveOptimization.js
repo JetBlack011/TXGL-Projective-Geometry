@@ -1,84 +1,226 @@
 /// <reference path="../p5.d.ts"/>
 /// <reference path="../math.d.ts"/>
 
-let poly, dot, normal = 400;
-let transform = math.identity(3);
-
-function setup() {
-    createCanvas(1000, 600);
-    angleMode(RADIANS);
-
-    // poly = [
-    //     [0, 0],
-    //     [1, 0],
-    //     [1, 5],
-    //     [0, 1]
-    // ];
+const projectiveOptimizationSketch = (s) => {
+    s.normal = 400;
+    s.rate = 0.003;
+    s.transform = math.identity(3);
     
-    // for (let i = 0; i < poly.length; i++) {
-    //     poly[i] = new Point(poly[i][0], poly[i][1]);
-    // }
+    s.draggables = [];
+    s.currentDraggable = null;
     
-    poly = generateRandomConvexPoly(15);
+    s.setup = () => {
+        s.createCanvas(1000, 600);
+        s.angleMode(RADIANS);
+    
+        s.poly = [
+            [0, 0],
+            [1, 0],
+            [1, 5],
+            [0, 1]
+        ];
 
-    normalize(poly);
+        s.dot = [0.5, 0.5];
+
+        s.polyDot = [s.dot];
+
+        // [0.25, 0.05]
+        // s.poly = [[0, 0], [0.5, 0], [0.25, 0.25]];
+
+        // s.poly = generateRandomConvexPoly(10);
+        
+        for (let i = 0; i < s.poly.length; i++) {
+            s.poly[i] = new Draggable(s.poly[i][0], s.poly[i][1]);
+            s.draggables.push(s.poly[i]);
+            s.polyDot.push(s.poly[i]);
+        }
+    
+        s.normalize();
+    }
+    
+    s.draw = () => {
+        s.translate(s.width / 2, s.height / 2);
+        s.stroke(255);
+        s.strokeWeight(1);
+        s.noFill();
+        s.background(0);
+    
+        if (!s.currentDraggable) {
+            s.optimize(s.rate);
+            s.normalize();
+        }
+    
+        // Draw circumcircle and incircle
+        let circumcircle = makeCircle(s.poly);
+        let incircle = makeIncircle([s.poly]);
+        let roundness = incircle.r / circumcircle.r;
+    
+        s.strokeWeight(0.5);
+        s.circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
+        s.circle(incircle.x, incircle.y, incircle.r * 2);
+    
+        document.getElementById('roundness').innerText = `Roundness = ${roundness.toFixed(4)}`;
+    
+        s.drawPoly();
+        s.outputTransform();
+    }
+
+    s.affineOptimize = (rate) => {
+        let furthestPoints = findFurthestPoints(s.poly);
+        let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
+        let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
+        let theta = p1.sub(p2).angleBetween(createVector(1, 0));
+    
+        let rot = rotationMatrix(theta);
+        let scale = scaleMatrix((1 - rate) * (s.normal / furthestPoints.s), s.normal / furthestPoints.s);
+        let rotInv = rotationMatrix(-theta);
+    
+        applyTransformation(rot, s.polyDot);
+        applyTransformation(scale, s.polyDot);
+        applyTransformation(rotInv, s.polyDot);
+        
+        s.transform = math.multiply(s.transform, rot);
+        s.transform = math.multiply(s.transform, scale);
+        s.transform = math.multiply(s.transform, rotInv);
+    }
+
+    s.projectiveOptimize = (rate) => {
+        let p1 = createVector(s.dot.x, s.dot.y);
+        let p2 = createVector(0, 0);
+        let distance = p1.mag();
+        let theta = p1.sub(p2).angleBetween(createVector(1, 0));
+    
+        let rot = rotationMatrix(theta);
+        let twist = twistMatrix((1 - rate) * s.normal / distance, 0);
+        let rotInv = rotationMatrix(-theta);
+
+        applyTransformation(rot, s.polyDot);
+        applyTransformation(twist, s.polyDot);
+        applyTransformation(rotInv, s.polyDot);
+
+        s.transform = math.multiply(s.transform, rot);
+        s.transform = math.multiply(s.transform, twist);
+        s.transform = math.multiply(s.transform, rotInv);
+    }
+    
+    s.optimize = (rate) => {
+        // s.affineOptimize(rate);
+        s.projectiveOptimize(rate);
+    }
+    
+    // Centers and scales poly to fit in the field of view
+    s.normalize = () => {
+        let furthestPoints = findFurthestPoints(s.poly);
+        let scale = scaleMatrix(s.normal / furthestPoints.s, s.normal / furthestPoints.s);
+        applyTransformation(scale, s.polyDot);
+        
+        let centerOfMass = getCenterOfMass(s.poly);
+        let translation = translationMatrix(-centerOfMass.x, -centerOfMass.y);
+        applyTransformation(translation, s.polyDot);
+        
+        s.transform = math.multiply(s.transform, scale);
+        s.transform = math.multiply(s.transform, translation);
+    }
+    
+    // Output functions
+    s.outputTransform = () => {
+        let matrix = s.transform.toArray();
+        let matrixString = '';
+    
+        for (let i = 0; i < matrix.length; i++) {
+            matrixString += '[ ';
+            for (let j = 0; j < matrix[i].length; j++)
+                matrixString += matrix[i][j].toFixed(3) + ' ';
+            matrixString += ']\n';
+        }
+    
+        document.getElementById('matrix').innerText = matrixString;
+    }
+    
+    s.drawPoly = () => {
+        // s.stroke(255, 0, 0);
+        // s.strokeWeight(5);
+        // point(...dot);
+
+        // Draw center of mass
+        s.stroke(255, 0, 0);
+        s.strokeWeight(5);
+        
+        let centerOfMass = getCenterOfMass(s.poly);
+        s.point(centerOfMass.x, centerOfMass.y)
+    
+        s.stroke(255);
+        s.fill(255);
+    
+        for (let i = 0; i < s.poly.length; i++) {
+            s.poly[i].draw(s);
+            
+            s.strokeWeight(1);
+            s.stroke(255);
+            s.line(s.poly[i].x, s.poly[i].y, s.poly[(i + 1) % s.poly.length].x, s.poly[(i + 1) % s.poly.length].y);
+    
+            // stroke(255);
+            // strokeWeight(1);
+    
+            // for (let j = 0; j < poly.length; j++) {
+            //     line(poly[i].x, poly[i].y, poly[j].x, poly[j].y);
+            // }
+    
+            // stroke(100);
+            // point(poly[i].x, poly[i].y);
+            // line(poly[i].x, poly[i].y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y);
+        }
+    }
+
+    s.mousePressed = () => {
+        for (let i = 0; i < s.draggables.length; ++i) {
+            if (s.canDrag(s.draggables[i]) && !s.currentDraggable) {
+                s.currentDraggable = s.draggables[i];
+            }
+        }
+    }
+
+    s.mouseDragged = () => {
+        if (s.currentDraggable) {
+            s.currentDraggable.x = s.mouseX - s.width / 2;
+            s.currentDraggable.y = s.mouseY - s.height / 2;
+        }
+    }
+
+    s.mouseReleased = () => {
+        s.currentDraggable = null;
+    }
+
+    s.canDrag = (draggable) => {
+        return Math.abs(s.mouseX - s.width / 2 - draggable.x) < draggable.r / 2
+            && Math.abs(s.mouseY - s.height / 2 - draggable.y) < draggable.r / 2;
+    }
 }
+    
+// Matrix functions
+rotationMatrix = (theta) => [
+    [cos(theta), -sin(theta), 0],
+    [sin(theta), cos(theta), 0],
+    [0, 0, 1],
+];
 
-function draw() {
-    translate(width / 2, height / 2);
-    stroke(255);
-    strokeWeight(1);
-    noFill();
-    background(0);
+scaleMatrix = (sx, sy) => [
+    [sx, 0, 0],
+    [0, sy, 0],
+    [0, 0, 1],
+];
 
-    optimize(0.001);
-    normalize(poly);
+translationMatrix = (tx, ty) => [
+    [1, 0, tx],
+    [0, 1, ty],
+    [0, 0, 1],
+];
 
-    // Draw circumcircle and incircle
-    let circumcircle = makeCircle(poly);
-    let incircle = polylabel([poly]);
-    let roundness = incircle.r / circumcircle.r;
-
-    circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
-    circle(incircle.x, incircle.y, incircle.r * 2);
-
-    document.getElementById('roundness').innerText = `Roundness = ${roundness.toFixed(4)}`;
-
-    drawPoly();
-    outputTransform();
-}
-
-function affineOptimize(rate) {
-    let furthestPoints = findFurthestPoints(poly);
-    let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
-    let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
-
-    let theta = p1.sub(p2).angleBetween(createVector(1, 0));
-
-    let rot = getRotationMatrix(theta);
-    let scale = getScaleMatrix((1 - rate) * (normal / furthestPoints.s), normal / furthestPoints.s);
-
-    // det = math.det(scale);
-
-    applyTransformation(rot, poly);
-    transform = math.multiply(transform, rot);
-    applyTransformation(scale, poly);
-    transform = math.multiply(transform, scale);
-
-    rot = getRotationMatrix(-theta);
-
-    applyTransformation(rot, poly);
-    transform = math.multiply(transform, rot);
-}
-
-function projectiveOptimize(rate) {
-
-}
-
-function optimize(rate) {
-    // projectiveOptimize(rate);
-    affineOptimize(rate);
-}
+twistMatrix = (tx, ty) => [
+    [1, 0, 0],
+    [0, 1, 0],
+    [tx, ty, 1],
+];
 
 // Point functions
 function getCenterOfMass(points) {
@@ -114,56 +256,9 @@ function findFurthestPoints(points) {
         }
     }
 
-    return {p1: poly[furthestPoints.x], p2: poly[furthestPoints.y], s: largestTotalDistance};
+    return {p1: points[furthestPoints.x], p2: points[furthestPoints.y], s: largestTotalDistance};
 }
-
-// Centers and scales poly to fit in the field of view
-function normalize() {
-    let furthestPoints = findFurthestPoints(poly);
-    let scale = getScaleMatrix(normal / furthestPoints.s, normal / furthestPoints.s);
-    applyTransformation(scale, poly);
     
-    let centerOfMass = getCenterOfMass(poly);
-    let translation = getTranslateMatrix(-centerOfMass.x, -centerOfMass.y);
-    applyTransformation(translation, poly);
-    
-    transform = math.multiply(transform, scale);
-    transform = math.multiply(transform, translation);
-}
-
-// Matrix functions
-function getRotationMatrix(theta) {
-    return [
-        [cos(theta), -sin(theta), 0],
-        [sin(theta), cos(theta), 0],
-        [0, 0, 1],
-    ];
-}
-
-function getScaleMatrix(sx, sy) {
-    return [
-        [sx, 0, 0],
-        [0, sy, 0],
-        [0, 0, 1],
-    ];
-}
-
-function getTranslateMatrix(tx, ty) {
-    return [
-        [1, 0, tx],
-        [0, 1, ty],
-        [0, 0, 1],
-    ];
-}
-
-function getTwistMatrix(tx, ty) {
-    return [
-        [1, 0, 0],
-        [0, 1, 0],
-        [tx, ty, 1],
-    ];
-}
-
 // Transform points by a matrix m
 function applyTransformation(m, points) {
     for (let i = 0; i < points.length; i++) {
@@ -186,55 +281,11 @@ function generateRandomConvexPoly(n) {
     let poly = [];
 
     for (let i = 0; i < n; i++) {
-        poly.push(new Point(Math.cos(angles[i]), Math.sin(angles[i])));
+        poly.push([Math.cos(angles[i]), Math.sin(angles[i])]);
     }
 
     return poly;
 }
-
-// Output functions
-function outputTransform() {
-    let matrix = transform.toArray();
-    let matrixString = '';
-
-    for (let i = 0; i < matrix.length; i++) {
-        matrixString += '[ ';
-        for (let j = 0; j < matrix[i].length; j++)
-            matrixString += matrix[i][j].toFixed(3) + ' ';
-        matrixString += ']\n';
-    }
-
-    document.getElementById('matrix').innerText = matrixString;
-}
-
-function drawPoly() {
-    stroke(255, 0, 0);
-    strokeWeight(5);
-    // point(...dot);
-
-    fill(255);
-
-    for (let i = 0; i < poly.length; i++) {
-        stroke(255);
-        strokeWeight(5);
-        point(poly[i].x, poly[i].y);
-        
-        strokeWeight(1);
-        line(poly[i].x, poly[i].y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y);
-
-        // stroke(255);
-        // strokeWeight(1);
-
-        // for (let j = 0; j < poly.length; j++) {
-        //     line(poly[i].x, poly[i].y, poly[j].x, poly[j].y);
-        // }
-
-        // stroke(100);
-        // point(poly[i].x, poly[i].y);
-        // line(poly[i].x, poly[i].y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y);
-    }
-}
-
 
 // Array manipulation
 function equal(m1, m2) {

@@ -13,14 +13,14 @@ const affineOptimizationSketch = (s) => {
         s.createCanvas(1000, 600);
         s.angleMode(RADIANS);
     
-        // s.poly = [
-        //     [0, 0],
-        //     [1, 0],
-        //     [1, 5],
-        //     [0, 1]
-        // ];
+        s.poly = [
+            [0, 0],
+            [1, 0],
+            [1, 5],
+            [0, 1]
+        ];
 
-        s.poly = generateRandomConvexPoly(10);
+        // s.poly = generateRandomConvexPoly(10);
         
         for (let i = 0; i < s.poly.length; i++) {
             s.poly[i] = new Draggable(s.poly[i][0], s.poly[i][1]);
@@ -37,7 +37,8 @@ const affineOptimizationSketch = (s) => {
         s.noFill();
         s.background(0);
     
-        if (!s.currentDraggable) {
+        // if (!s.currentDraggable) {
+        if (!mouseIsPressed) {
             s.optimize(s.rate);
             s.normalize();
         }
@@ -61,6 +62,10 @@ const affineOptimizationSketch = (s) => {
         let furthestPoints = findFurthestPoints(s.poly);
         let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
         let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
+
+        // s.stroke(255);
+        // s.strokeWeight(5);
+        // s.line(p1.x, p1.y, p2.x, p2.y);
     
         let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
@@ -70,8 +75,9 @@ const affineOptimizationSketch = (s) => {
         // det = math.det(scale);
     
         applyTransformation(rot, s.poly);
-        s.transform = math.multiply(s.transform, rot);
         applyTransformation(scale, s.poly);
+
+        s.transform = math.multiply(s.transform, rot);
         s.transform = math.multiply(s.transform, scale);
     
         rot = rotationMatrix(-theta);
@@ -128,6 +134,7 @@ const affineOptimizationSketch = (s) => {
             s.poly[i].draw(s);
             
             s.strokeWeight(1);
+            s.stroke(255);
             s.line(s.poly[i].x, s.poly[i].y, s.poly[(i + 1) % s.poly.length].x, s.poly[(i + 1) % s.poly.length].y);
     
             // stroke(255);

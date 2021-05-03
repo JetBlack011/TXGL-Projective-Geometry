@@ -36,9 +36,9 @@ class Draggable {
     draw(s) {
         s.strokeWeight(1);
         if (this.isDragging(s)) {
-            s.stroke(255, 0, 0, 0);
+            s.stroke(255, 0, 0);
             s.circle(this.x, this.y, this.r);
-            s.stroke(0);
+            s.stroke(255);
         } else {
             s.circle(this.x, this.y, this.r);
         }
