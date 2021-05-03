@@ -2,14 +2,17 @@
   <head>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.2.0/lib/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.2.0/math.js"></script>
-    <!-- <script src="js/draggable.js"></script>
-    <script src="js/cameraSketch.js"></script>
-    comment in above line to switch to 3d camera view
+    <script src="https://unpkg.com/tinyqueue@2.0.0/tinyqueue.min.js"></script>
+    <script src="js/smallestEnclosingCircle.js"></script>
+    <script src="js/polylabel.js"></script>
+    <script src="js/draggable.js"></script>
+    <!-- <script src="js/cameraSketch.js"></script>
     <script src="js/triangleSketch.js"></script>
     <script src="js/lightXZSketch.js"></script>
-    <script src="js/lightZYSketch.js"></script>
-    <script src="js/index.js"></script> -->
+    <script src="js/lightZYSketch.js"></script> -->
     <script src="js/affineOptimization.js"></script>
+    <!-- <script src="js/projectiveOptimization.js"></script> -->
+    <script src="js/index.js"></script>
     <style>
       canvas {
         border-radius: 7px;
@@ -18,6 +21,7 @@
   </head>
   <body>
     <div id='matrix'></div>
+    <div id='roundness'></div>
   </body>
   <!-- <body>
     <table>

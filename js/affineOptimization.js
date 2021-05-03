@@ -1,103 +1,219 @@
 /// <reference path="../p5.d.ts"/>
 /// <reference path="../math.d.ts"/>
 
-let poly, newPoly, circumcircle = {x: 0, y: 0, r: Infinity}, prevCircle;
-let normal = 300;
-let transform = math.identity(3), det = 1;
-
-function setup() {
-    createCanvas(1000, 600);
-    angleMode(RADIANS);
-
-    poly = [
-        [0, 0],
-        [5, 5],
-        [3, 5]
-    ];
-
-    newPoly = poly;
-
-    let furthestPoints = findFurthestPoints(newPoly);
-    let scale = getScaleMatrix(0.999 * (normal / furthestPoints.s), normal / furthestPoints.s);
-    poly = applyTransformation(scale, poly);
-}
-
-function draw() {
-    if (det >= 1) {
-        translate(width / 2 - normal / 2, height / 2 - normal / 2);
-        stroke(255);
-        strokeWeight(1);
-        noFill();
-        background(0);
+const affineOptimizationSketch = (s) => {
+    s.normal = 400;
+    s.rate = 0.003;
+    s.transform = math.identity(3);
     
-        let furthestPoints = findFurthestPoints(newPoly);
-        let p1 = createVector(...furthestPoints.p1);
-        let p2 = createVector(...furthestPoints.p2);
+    s.draggables = [];
+    s.currentDraggable = null;
+    
+    s.setup = () => {
+        s.createCanvas(1000, 600);
+        s.angleMode(RADIANS);
+    
+        // s.poly = [
+        //     [0, 0],
+        //     [1, 0],
+        //     [1, 5],
+        //     [0, 1]
+        // ];
+
+        s.poly = generateRandomConvexPoly(10);
+        
+        for (let i = 0; i < s.poly.length; i++) {
+            s.poly[i] = new Draggable(s.poly[i][0], s.poly[i][1]);
+            s.draggables.push(s.poly[i]);
+        }
+    
+        s.normalize();
+    }
+    
+    s.draw = () => {
+        s.translate(s.width / 2, s.height / 2);
+        s.stroke(255);
+        s.strokeWeight(1);
+        s.noFill();
+        s.background(0);
+    
+        if (!s.currentDraggable) {
+            s.optimize(s.rate);
+            s.normalize();
+        }
+    
+        // Draw circumcircle and incircle
+        let circumcircle = makeCircle(s.poly);
+        let incircle = makeIncircle([s.poly]);
+        let roundness = incircle.r / circumcircle.r;
+    
+        s.strokeWeight(0.5);
+        s.circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
+        s.circle(incircle.x, incircle.y, incircle.r * 2);
+    
+        document.getElementById('roundness').innerText = `Roundness = ${roundness.toFixed(4)}`;
+    
+        s.drawPoly();
+        s.outputTransform();
+    }
+    
+    s.optimize = (rate) => {
+        let furthestPoints = findFurthestPoints(s.poly);
+        let p1 = createVector(furthestPoints.p1.x, furthestPoints.p1.y);
+        let p2 = createVector(furthestPoints.p2.x, furthestPoints.p2.y);
     
         let theta = p1.sub(p2).angleBetween(createVector(1, 0));
     
-        let rot = getRotationMatrix(theta);
-        let scale = getScaleMatrix(0.999 * (normal / furthestPoints.s), normal / furthestPoints.s);
+        let rot = rotationMatrix(theta);
+        let scale = scaleMatrix((1 - rate) * (s.normal / furthestPoints.s), s.normal / furthestPoints.s);
     
-        det = math.det(scale);
+        // det = math.det(scale);
     
-        prevTransform = transform;
+        applyTransformation(rot, s.poly);
+        s.transform = math.multiply(s.transform, rot);
+        applyTransformation(scale, s.poly);
+        s.transform = math.multiply(s.transform, scale);
     
-        newPoly = applyTransformation(rot, newPoly);
-        transform = math.multiply(transform, rot);
-        newPoly = applyTransformation(scale, newPoly);
-        transform = math.multiply(transform, scale);
+        rot = rotationMatrix(-theta);
     
-        rot = getRotationMatrix(-theta);
+        applyTransformation(rot, s.poly);
+        s.transform = math.multiply(s.transform, rot);
+    }
     
-        newPoly = applyTransformation(rot, newPoly);
-        transform = math.multiply(transform, rot);
+    // Centers and scales poly to fit in the field of view
+    s.normalize = () => {
+        let furthestPoints = findFurthestPoints(s.poly);
+        let scale = scaleMatrix(s.normal / furthestPoints.s, s.normal / furthestPoints.s);
+        applyTransformation(scale, s.poly);
+        
+        let centerOfMass = getCenterOfMass(s.poly);
+        let translation = translationMatrix(-centerOfMass.x, -centerOfMass.y);
+        applyTransformation(translation, s.poly);
+        
+        s.transform = math.multiply(s.transform, scale);
+        s.transform = math.multiply(s.transform, translation);
+    }
     
-        prevCircle = circumcircle;
-        circumcircle = findCircumcircle(newPoly, furthestPoints.p1, furthestPoints.p2);
-    
-        if (circumcircle.r === Infinity || det < 1) {
-            circumcircle = prevCircle;
-        }
-
-        let matrix = transform.toArray();
+    // Output functions
+    s.outputTransform = () => {
+        let matrix = s.transform.toArray();
         let matrixString = '';
+    
         for (let i = 0; i < matrix.length; i++) {
             matrixString += '[ ';
             for (let j = 0; j < matrix[i].length; j++)
                 matrixString += matrix[i][j].toFixed(3) + ' ';
             matrixString += ']\n';
         }
-
+    
         document.getElementById('matrix').innerText = matrixString;
+    }
     
-        circle(circumcircle.x, circumcircle.y, circumcircle.r * 2);
+    s.drawPoly = () => {
+        // s.stroke(255, 0, 0);
+        // s.strokeWeight(5);
+        // point(...dot);
+
+        // Draw center of mass
+        s.stroke(255, 0, 0);
+        s.strokeWeight(5);
+        
+        let centerOfMass = getCenterOfMass(s.poly);
+        s.point(centerOfMass.x, centerOfMass.y)
     
-        fill(255);
-        for (let i = 0; i < newPoly.length; i++) {
-            stroke(255);
-            strokeWeight(5);
-            point(newPoly[i][0], newPoly[i][1]);
-            stroke(100);
-            point(poly[i][0], poly[i][1]);
+        s.stroke(255);
+        s.fill(255);
+    
+        for (let i = 0; i < s.poly.length; i++) {
+            s.poly[i].draw(s);
             
-            stroke(255);
-            strokeWeight(1);
-            line(newPoly[i][0], newPoly[i][1], newPoly[(i + 1) % newPoly.length][0], newPoly[(i + 1) % newPoly.length][1]);
-            stroke(100);
-            line(poly[i][0], poly[i][1], poly[(i + 1) % poly.length][0], poly[(i + 1) % poly.length][1]);
+            s.strokeWeight(1);
+            s.line(s.poly[i].x, s.poly[i].y, s.poly[(i + 1) % s.poly.length].x, s.poly[(i + 1) % s.poly.length].y);
+    
+            // stroke(255);
+            // strokeWeight(1);
+    
+            // for (let j = 0; j < poly.length; j++) {
+            //     line(poly[i].x, poly[i].y, poly[j].x, poly[j].y);
+            // }
+    
+            // stroke(100);
+            // point(poly[i].x, poly[i].y);
+            // line(poly[i].x, poly[i].y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y);
         }
     }
+
+    s.mousePressed = () => {
+        for (let i = 0; i < s.draggables.length; ++i) {
+            if (s.canDrag(s.draggables[i]) && !s.currentDraggable) {
+                s.currentDraggable = s.draggables[i];
+            }
+        }
+    }
+
+    s.mouseDragged = () => {
+        if (s.currentDraggable) {
+            s.currentDraggable.x = s.mouseX - s.width / 2;
+            s.currentDraggable.y = s.mouseY - s.height / 2;
+        }
+    }
+
+    s.mouseReleased = () => {
+        s.currentDraggable = null;
+    }
+
+    s.canDrag = (draggable) => {
+        return Math.abs(s.mouseX - s.width / 2 - draggable.x) < draggable.r / 2
+            && Math.abs(s.mouseY - s.height / 2 - draggable.y) < draggable.r / 2;
+    }
+}
+    
+// Matrix functions
+rotationMatrix = (theta) => [
+    [cos(theta), -sin(theta), 0],
+    [sin(theta), cos(theta), 0],
+    [0, 0, 1],
+];
+
+scaleMatrix = (sx, sy) => [
+    [sx, 0, 0],
+    [0, sy, 0],
+    [0, 0, 1],
+];
+
+translationMatrix = (tx, ty) => [
+    [1, 0, tx],
+    [0, 1, ty],
+    [0, 0, 1],
+];
+
+twistMatrix = (tx, ty) => [
+    [1, 0, 0],
+    [0, 1, 0],
+    [tx, ty, 1],
+];
+
+// Point functions
+function getCenterOfMass(points) {
+    let totalMass = 0, totalx = 0, totaly = 0;
+
+    for (let i = 0; i < points.length; i++) {
+        totalMass++;
+        totalx += points[i].x;
+        totaly += points[i].y;
+    }
+
+    return new Point(totalx / totalMass, totaly / totalMass);
 }
 
-function findFurthestPoints(poly) {
-    let furthestPoints = [0, 0], largestTotalDistance = 0;
+function findFurthestPoints(points) {
+    let furthestPoints = new Point(0, 0), largestTotalDistance = 0;
 
-    for (let i = 0; i < poly.length; i++) {
+    for (let i = 0; i < points.length; i++) {
         let furthestPoint = i, largestDistance = 0;
 
-        for (let j = 0; j < poly.length; j++) {
-            let distance = dist(poly[i][0], poly[i][1], poly[j][0], poly[j][1]);
+        for (let j = 0; j < points.length; j++) {
+            let distance = dist(points[i].x, points[i].y, points[j].x, points[j].y);
 
             if (distance > largestDistance) {
                 largestDistance = distance;
@@ -107,58 +223,42 @@ function findFurthestPoints(poly) {
 
         if (largestDistance > largestTotalDistance) {
             largestTotalDistance = largestDistance;
-            furthestPoints = [i, furthestPoint];
+            furthestPoints = new Point(i, furthestPoint);
         }
     }
 
-    return {p1: poly[furthestPoints[0]], p2: poly[furthestPoints[1]], s: largestTotalDistance};
+    return {p1: points[furthestPoints.x], p2: points[furthestPoints.y], s: largestTotalDistance};
 }
-
-function shift(poly, shiftX, shiftY) {
-    poly.map(p => {
-        p[0] += shiftX;
-        p[1] += shiftY;
-    });
-}
-
-function getRotationMatrix(theta) {
-    return [
-        [cos(theta), -sin(theta), 0],
-        [sin(theta), cos(theta), 0],
-        [0, 0, 1],
-    ];
-}
-
-function getScaleMatrix(sx, sy) {
-    return [
-        [sx, 0, 0],
-        [0, sy, 0],
-        [0, 0, 1],
-    ];
-}
-
-function getTranslateMatrix(tx, ty) {
-    return [
-        [0, 0, tx],
-        [0, 0, ty],
-        [0, 0, 1],
-    ];
-}
-
+    
+// Transform points by a matrix m
 function applyTransformation(m, points) {
-    let newPoints = new Array(points.length).fill(0);
-
     for (let i = 0; i < points.length; i++) {
-        let x = points[i][0], y = points[i][1];
+        let x = points[i].x, y = points[i].y;
 
-        newPoints[i] = new Array(2).fill(0);
-        newPoints[i][0] = (m[0][2] + m[0][0] * x + m[0][1] * y) / (m[2][2] + m[2][0] * x + m[2][1] * y);
-        newPoints[i][1] = (m[1][2] + m[1][0] * x + m[1][1] * y) / (m[2][2] + m[2][0] * x + m[2][1] * y);
+        points[i].x = (m[0][2] + m[0][0] * x + m[0][1] * y) / (m[2][2] + m[2][0] * x + m[2][1] * y);
+        points[i].y = (m[1][2] + m[1][0] * x + m[1][1] * y) / (m[2][2] + m[2][0] * x + m[2][1] * y);
+    }
+}
+
+function generateRandomConvexPoly(n) {
+    let angles = [];
+
+    for (let i = 0; i < n; i++) {
+        angles[i] = Math.random() * Math.PI * 2;
     }
 
-    return newPoints;
+    angles.sort();
+
+    let poly = [];
+
+    for (let i = 0; i < n; i++) {
+        poly.push([Math.cos(angles[i]), Math.sin(angles[i])]);
+    }
+
+    return poly;
 }
 
+// Array manipulation
 function equal(m1, m2) {
     if (!Array.isArray(m1) && !Array.isArray(m2)) {
         return m1 === m2;
@@ -182,147 +282,4 @@ function deepCopy(arr) {
     for (let i = 0; i < arr.length; i++) {
         copy[i] = arr[i].slice(0);
     }
-}
-
-function findCircumcircle(poly, p1, p2) {
-    let smallestRadius = Infinity;
-    let bestCircle = {x: 0, y: 0, r: Infinity};
-    let epsilon = 0.01;
-
-    for (let i = 0; i < poly.length; i++) {
-        if (!equal(poly[i], p1) && !equal(poly[i], p2)) {
-            let circle = circleFromPoints(p1, p2, poly[i]);
-            let isValid = true;
-            
-            for (let j = 0; j < poly.length; j++) {
-                isValid &= dist(circle.x, circle.y, poly[j][0], poly[j][1]) <= circle.r + epsilon;
-            }
-
-            if (isValid)
-                bestCircle = circle;
-        }
-    }
-
-    return bestCircle;
-}
-
-function circleFromPoints(p1, p2, p3) {
-    let a = p1[0] * (p2[1] - p3[1]) - p1[1] * (p2[0] - p3[0]) + p2[0] * p3[1] - p3[0] * p2[1];
-
-    let b = (p1[0] * p1[0] + p1[1] * p1[1]) * (p3[1] - p2[1]) 
-            + (p2[0] * p2[0] + p2[1] * p2[1]) * (p1[1] - p3[1])
-            + (p3[0] * p3[0] + p3[1] * p3[1]) * (p2[1] - p1[1]);
-    
-    let c = (p1[0] * p1[0] + p1[1] * p1[1]) * (p2[0] - p3[0]) 
-            + (p2[0] * p2[0] + p2[1] * p2[1]) * (p3[0] - p1[0]) 
-            + (p3[0] * p3[0] + p3[1] * p3[1]) * (p1[0] - p2[0]);
-    
-    let x = -b / (2 * a);
-    let y = -c / (2 * a);
-
-    return {
-        x: x,
-        y: y,
-        r: Math.hypot(x - p1[0], y - p1[1])
-    };
-}
-
-// Credit: Sander Verdonschot
-function generateRandomConvexPoly(n) {
-    // Generate two lists of random X and Y coordinates
-    let xPool = [];
-    let yPool = [];
-
-    for (let i = 0; i < n; i++) {
-        xPool.push(Math.random());
-        yPool.push(Math.random());
-    }
-
-    // Sort them
-    xPool.sort();
-    yPool.sort();
-
-    // Isolate the extreme points
-    let minX = xPool[0];
-    let maxX = xPool[n - 1];
-    let minY = yPool[0];
-    let maxY = yPool[n - 1];
-
-    // Divide the interior points into two chains & Extract the vector components
-    let xVec = [];
-    let yVec = [];
-
-    let lastTop = minX, lastBot = minX;
-
-    for (let i = 1; i < n - 1; i++) {
-        let x = xPool[i];
-
-        if (Math.random() < 0.5) {
-            xVec.push(x - lastTop);
-            lastTop = x;
-        } else {
-            xVec.push(lastBot - x);
-            lastBot = x;
-        }
-    }
-
-    xVec.push(maxX - lastTop);
-    xVec.push(lastBot - maxX);
-
-    let lastLeft = minY, lastRight = minY;
-
-    for (let i = 1; i < n - 1; i++) {
-        let y = yPool[i];
-
-        if (Math.random() < 0.5) {
-            yVec.push(y - lastLeft);
-            lastLeft = y;
-        } else {
-            yVec.push(lastRight - y);
-            lastRight = y;
-        }
-    }
-
-    yVec.push(maxY - lastLeft);
-    yVec.push(lastRight - maxY);
-
-    // Randomly pair up the X- and Y-components
-    shuffle(yVec, true);
-
-    // Combine the paired up components into vectors
-    let vec = [];
-
-    for (let i = 0; i < n; i++) {
-        vec.push([xVec[i], yVec[i]]);
-    }
-
-    // Sort the vectors by angle
-    vec.sort(v => Math.atan2(v[1], v[0]));
-
-    // Lay them end-to-end
-    let x = 0, y = 0;
-    let minPolyX = 0;
-    let minPolyY = 0;
-    let points = [];
-
-    for (let i = 0; i < n; i++) {
-        points.push([x, y]);
-
-        x += vec[i][0];
-        y += vec[i][1];
-
-        minPolyX = Math.min(minPolyX, x);
-        minPolyY = Math.min(minPolyY, y);
-    }
-
-    // Move the polygon to the original min and max coordinates
-    let xShift = minX - minPolyX;
-    let yShift = minY - minPolyY;
-
-    for (let i = 0; i < n; i++) {
-        let p = points[i];
-        points[i] = [p[0] + xShift, p[1] + yShift];
-    }
-
-    return points;
 }
